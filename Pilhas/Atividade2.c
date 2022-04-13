@@ -60,8 +60,12 @@ bool estaVazia(PilhaDinamica *compilador){
   return(compilador->qtde == 0);
 }
 
-void empilharElementos(PilhaDinamica *compilador, char caracter){
+void empilharElementos(PilhaDinamica *compilador, char caracter, int contaTemp, FILE* arq){
   //só ira empilhar os elementos se eles forem validos(funções retornam true)
+  if (caracter == 'T' && !estaVazia(compilador)) {
+    contaTemp++;
+    fprintf(arq, "Em empilha STR TEMP%d\n", contaTemp);
+  }
     PtrNoPilha aux = malloc(sizeof(NoPilha));
     aux->instrucao = caracter;
     aux->proximo = compilador->topo;
@@ -81,28 +85,64 @@ void imprimePilha(PilhaDinamica *compilador){
   printf(" ]\n");
 }
 
-void desempilhaInstrucoes(PilhaDinamica *compilador, FILE* arq, char caractere){
-  while(!estaVazia(compilador)) {
-    for (size_t i = 0; i < 2; i++) {
+void desempilhaInstrucoes(PilhaDinamica *compilador, FILE* arq, char caractere, int contaTemp){
+  //while(!estaVazia(compilador)) {
+    //for (size_t i = 0; i < 2; i++) {
       char valor;
-      valor = compilador->topo->instrucao;
       PtrNoPilha aux;
+      valor = compilador->topo->instrucao;
       aux = compilador->topo;
       compilador->topo = compilador->topo->proximo;
       free(aux);
-      compilador->qtde--;
-      printf("Valor desempilhado: %c\n",valor);
-      fprintf(arq, "STR %c\n", valor);
+
+      char valor2 = compilador->topo->instrucao;
+      aux = compilador->topo;
+      compilador->topo = compilador->topo->proximo;
+      free(aux);
+      if (valor == 'T' || valor2 == 'T') {
+        fprintf(arq, "Desempilha LDR TEMP%d\n",contaTemp);
+      }else{
+
+        printf("LDR %c\n", valor);
+        fprintf(arq, "Valor 1: LDR %c\n", valor);
+        printf("LDR %c\n",valor2);
+        fprintf(arq, "Valor 2: LDR %c\n", valor2);
     }
-  }
+    //  }
+      switch (caractere) {
+        case '*':
+          printf("MULT %c %c\n", valor, valor2);
+          fprintf(arq, "MULT %c %c\n", valor, valor2);
+          empilharElementos(compilador, 'T',contaTemp, arq);
+          break;
+        case '+':
+          printf("ADD %c %c\n", valor, valor2);
+          fprintf(arq, "ADD %c %c\n", valor, valor2);
+          empilharElementos(compilador, 'T',contaTemp, arq);
+          break;
+        case '/':
+          printf("DIV %c %c\n", valor, valor2);
+          fprintf(arq, "DIV %c %c\n", valor, valor2);
+          empilharElementos(compilador, 'T', contaTemp, arq);
+          break;
+        case '-':
+          printf("SUB %c %c\n", valor, valor2);
+          fprintf(arq, "SUB %c %c\n", valor, valor2);
+          empilharElementos(compilador, 'T', contaTemp, arq);
+          break;
+        default:
+          printf("SLa\n");
+          break;
+    }
+  //}
 }
-
-
 
 int main(int argc, char const *argv[]) {
   PilhaDinamica c;
   char caractere;
   iniciarPilha(&c);
+  int contaTemp = 0;
+
 
   FILE *arq1 = fopen("entrada.txt", "r");
   if (arq1 == NULL) {
@@ -115,18 +155,22 @@ int main(int argc, char const *argv[]) {
     exit(1);
   }
 
-  while (caractere != ' ') {
-    fscanf(arq1, "%c", &caractere);
+  //empilharElementos(&c, '1',contaTemp, arq2);
+  while ((caractere = fgetc(arq1)) != EOF) {
     printf("Caractere: %c\n\n", caractere);
     if (caracterValido(caractere)) {
-      empilharElementos(&c, caractere);
+      empilharElementos(&c, caractere,contaTemp, arq2);
+      imprimePilha(&c);
     }
     if (operacaoValida(caractere)) {
-      desempilhaInstrucoes(&c, arq2, caractere);
+      desempilhaInstrucoes(&c, arq2, caractere, contaTemp);
+      imprimePilha(&c);
     }
-    imprimePilha(&c);
+    if (estaVazia(&c)) {
+      break;
+    }
   }
   fclose(arq1);
-
+  fclose(arq2);
   return 0;
 }
