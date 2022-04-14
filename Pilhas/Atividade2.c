@@ -158,7 +158,6 @@ void desempilhaInstrucoes(PilhaDinamica *compilador, FILE* arq, char caractere, 
           fprintf(arq, "STR TEMP%d\n",*contaTemp);
           break;
         default:
-          printf("SLa\n");
           break;
     }
   //}
