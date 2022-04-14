@@ -4,7 +4,6 @@
 #include <string.h>
 
 
-
 /*construir um compilador que recebe uma expressão escrita em Notação Pos-fixa
 ex: a*b + c -> a b * c +   a*(b+c) -> a b c + *   (a+b)*c -> a b + c *
 (a+b)*(cd)->a b + c d + *
@@ -60,12 +59,8 @@ bool estaVazia(PilhaDinamica *compilador){
   return(compilador->qtde == 0);
 }
 
-void empilharElementos(PilhaDinamica *compilador, char caracter, int contaTemp, FILE* arq){
+void empilharElementos(PilhaDinamica *compilador, char caracter, FILE* arq){
   //só ira empilhar os elementos se eles forem validos(funções retornam true)
-  if (caracter == 'T' && !estaVazia(compilador)) {
-    contaTemp++;
-    fprintf(arq, "Em empilha STR TEMP%d\n", contaTemp);
-  }
     PtrNoPilha aux = malloc(sizeof(NoPilha));
     aux->instrucao = caracter;
     aux->proximo = compilador->topo;
@@ -85,7 +80,7 @@ void imprimePilha(PilhaDinamica *compilador){
   printf(" ]\n");
 }
 
-void desempilhaInstrucoes(PilhaDinamica *compilador, FILE* arq, char caractere, int contaTemp){
+void desempilhaInstrucoes(PilhaDinamica *compilador, FILE* arq, char caractere, int* contaTemp){
   //while(!estaVazia(compilador)) {
     //for (size_t i = 0; i < 2; i++) {
       char valor;
@@ -100,35 +95,67 @@ void desempilhaInstrucoes(PilhaDinamica *compilador, FILE* arq, char caractere, 
       compilador->topo = compilador->topo->proximo;
       free(aux);
       if (valor == 'T' || valor2 == 'T') {
-        fprintf(arq, "Desempilha LDR TEMP%d\n",contaTemp);
+        fprintf(arq, "LDR TEMP%d\n", *contaTemp);
+        fprintf(arq, "LDR TEMP%d\n", *contaTemp - 1);
       }else{
 
         printf("LDR %c\n", valor);
-        fprintf(arq, "Valor 1: LDR %c\n", valor);
+        fprintf(arq, "LDR %c\n", valor);
         printf("LDR %c\n",valor2);
-        fprintf(arq, "Valor 2: LDR %c\n", valor2);
+        fprintf(arq, "LDR %c\n", valor2);
     }
     //  }
       switch (caractere) {
         case '*':
-          printf("MULT %c %c\n", valor, valor2);
+        if (valor == 'T' && valor2 == 'T') {
+          printf("MULT TEMP%d TEMP%d\n",contaTemp, contaTemp - 1 );
+          fprintf(arq, "MULT TEMP%d TEMP%d\n",*contaTemp, *contaTemp - 1);
+        }else{
+          printf("MULT %c %c\n",valor, valor2);
           fprintf(arq, "MULT %c %c\n", valor, valor2);
-          empilharElementos(compilador, 'T',contaTemp, arq);
+        }
+          *contaTemp = *contaTemp + 1;
+          empilharElementos(compilador, 'T', arq);
+          fprintf(arq, "STR TEMP%d\n",*contaTemp);
           break;
         case '+':
-          printf("ADD %c %c\n", valor, valor2);
+        if (valor == 'T' && valor2 == 'T') {
+          printf("ADD TEMP%d TEMP%d\n",contaTemp, contaTemp - 1 );
+          fprintf(arq, "ADD TEMP%d TEMP%d\n",*contaTemp, *contaTemp - 1);
+        }else{
+          printf("ADD %c %c\n",valor, valor2);
           fprintf(arq, "ADD %c %c\n", valor, valor2);
-          empilharElementos(compilador, 'T',contaTemp, arq);
+        }
+          *contaTemp = *contaTemp + 1;
+          printf("ADD %c %c\n", valor, valor2);
+          empilharElementos(compilador, 'T', arq);
+          fprintf(arq, "STR TEMP%d\n",*contaTemp);
           break;
         case '/':
-          printf("DIV %c %c\n", valor, valor2);
+        if (valor == 'T' && valor2 == 'T') {
+          printf("DIV TEMP%d TEMP%d\n",contaTemp, contaTemp - 1 );
+          fprintf(arq, "DIV TEMP%d TEMP%d\n",*contaTemp, *contaTemp - 1);
+        }else{
+          printf("DIV %c %c\n",valor, valor2);
           fprintf(arq, "DIV %c %c\n", valor, valor2);
-          empilharElementos(compilador, 'T', contaTemp, arq);
+        }
+          *contaTemp = *contaTemp + 1;
+          printf("DIV %c %c\n", valor, valor2);
+          empilharElementos(compilador, 'T',  arq);
+          fprintf(arq, "STR TEMP%d\n",*contaTemp);
           break;
         case '-':
-          printf("SUB %c %c\n", valor, valor2);
+        if (valor == 'T' && valor2 == 'T') {
+          printf("SUB TEMP%d TEMP%d\n",contaTemp, contaTemp - 1 );
+          fprintf(arq, "SUB TEMP%d TEMP%d\n",*contaTemp, *contaTemp - 1);
+        }else{
+          printf("SUB %c %c\n",valor, valor2);
           fprintf(arq, "SUB %c %c\n", valor, valor2);
-          empilharElementos(compilador, 'T', contaTemp, arq);
+        }
+          printf("SUB %c %c\n", valor, valor2);
+          *contaTemp = *contaTemp + 1;
+          empilharElementos(compilador, 'T',  arq);
+          fprintf(arq, "STR TEMP%d\n",*contaTemp);
           break;
         default:
           printf("SLa\n");
@@ -159,11 +186,11 @@ int main(int argc, char const *argv[]) {
   while ((caractere = fgetc(arq1)) != EOF) {
     printf("Caractere: %c\n\n", caractere);
     if (caracterValido(caractere)) {
-      empilharElementos(&c, caractere,contaTemp, arq2);
+      empilharElementos(&c, caractere, arq2);
       imprimePilha(&c);
     }
     if (operacaoValida(caractere)) {
-      desempilhaInstrucoes(&c, arq2, caractere, contaTemp);
+      desempilhaInstrucoes(&c, arq2, caractere, &contaTemp);
       imprimePilha(&c);
     }
     if (estaVazia(&c)) {
