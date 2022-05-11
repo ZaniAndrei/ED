@@ -26,15 +26,6 @@ typedef struct{
   int tamanho;
 }ListaDupla;
 
-
-//primeiro caso: menor que o inicio
-//segundo caso: maior que o final
-//terceiro caso: maior que o inicio menor que o final
-//
-//
-//
-//
-//
 int tamanhoListaNoSentinela(ListaDupla *lista){
   return(lista->tamanho);
 }
