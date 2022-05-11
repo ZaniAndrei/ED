@@ -111,16 +111,49 @@ void inserirListaDupla(ListaDupla *lista, Cadastro cadastro){
 
 void buscaLista(ListaDupla *lista, int busca, FILE* arq){
   PtrNoLista percorre;
+  bool elementoEncontrado = false;
   //loop vai parar no ponteiro anterior ao que queremos encontrar
-  for (percorre = lista->inicio->proximo; percorre->proximo->cadastro.codigo < busca; percorre = percorre->proximo) {
+  for (percorre = lista->inicio->proximo; percorre != lista->inicio; percorre = percorre->proximo) {
+    if (percorre->cadastro.codigo == busca) {
+      fprintf(arq,"{%d,%s,%s,", percorre->cadastro.codigo, percorre->cadastro.nome, percorre->cadastro.sexo);
+      fprintf(arq,"%d,%.2f,%.2f,%s}\n", percorre->cadastro.idade, percorre->cadastro.peso, percorre->cadastro.altura, percorre->cadastro.telefone);
+      elementoEncontrado = true;
     }
-    if (percorre->proximo->cadastro.codigo == busca) {
-      fprintf(arq,"{%d,%s,%s,", percorre->proximo->cadastro.codigo, percorre->proximo->cadastro.nome, percorre->proximo->cadastro.sexo);
-      fprintf(arq,"%d,%.2f,%.2f,%s}\n", percorre->proximo->cadastro.idade, percorre->proximo->cadastro.peso, percorre->proximo->cadastro.altura, percorre->proximo->cadastro.telefone);
-    }else{
-      fprintf(arq,"Elemento nao encontrado\n");
-      }
   }
+  if (!elementoEncontrado) {
+    fprintf(arq, "Elemento nao encontrado\n");
+  }
+}
+
+void remocaoLista(ListaDupla* lista, Cadastro cadastro, int removido){
+  if (lista->inicio->proximo->cadastro.codigo == removido) {
+    lista->inicio->proximo = lista->inicio->proximo->proximo;
+    lista->inicio->proximo->anterior = lista->inicio;
+  }else if (lista->inicio->anterior->cadastro.codigo == removido) {
+    lista->inicio->anterior = lista->inicio->anterior->anterior;
+    lista->inicio->anterior->proximo = lista->inicio;
+  }else{
+    PtrNoLista percorre;
+    for (percorre = lista->inicio->proximo; percorre->proximo->cadastro.codigo == removido; percorre = percorre->proximo) {
+    }
+    percorre->anterior->proximo = percorre->proximo;
+    percorre->proximo->anterior = percorre->anterior;
+  }
+  lista->tamanho--;
+}
+
+
+
+void destroiLista(ListaDupla *lista, Cadastro cadastro){
+  PtrNoLista destruidor;
+  destruidor = lista->inicio->proximo;
+  while (lista->tamanho != 0) {
+    remocaoLista(lista, cadastro, destruidor->cadastro.codigo);
+    destruidor = destruidor->proximo;
+    free(destruidor);
+  }
+  printf("\n");
+}
 
 
 
@@ -225,6 +258,9 @@ int main(int argc, char const *argv[]) {
      exit(1);
      break;
  }
-
+ //destroi a lista e libera a memoria
+ destroiLista(&l, cadastro);
+ fclose(arq1);
+ fclose(arq2);
  return 0;
 }
