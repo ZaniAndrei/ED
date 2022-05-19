@@ -26,7 +26,10 @@ typedef struct{
   int tamanho;
 }ListaDupla;
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 703d87a92783e80c264182ae6ce47eb9be2cfaab
 int tamanhoListaNoSentinela(ListaDupla *lista){
   return(lista->tamanho);
 }
@@ -111,6 +114,7 @@ void inserirListaDupla(ListaDupla *lista, Cadastro cadastro){
 
 void buscaLista(ListaDupla *lista, int busca, FILE* arq){
   PtrNoLista percorre;
+<<<<<<< HEAD
   bool elementoEncontrado = false;
   //loop vai parar no ponteiro anterior ao que queremos encontrar
   for (percorre = lista->inicio->proximo; percorre != lista->inicio; percorre = percorre->proximo) {
@@ -154,6 +158,18 @@ void destroiLista(ListaDupla *lista, Cadastro cadastro){
   }
   printf("\n");
 }
+=======
+  //loop vai parar no ponteiro anterior ao que queremos encontrar
+  for (percorre = lista->inicio->proximo; percorre->proximo->cadastro.codigo < busca; percorre = percorre->proximo) {
+    }
+    if (percorre->proximo->cadastro.codigo == busca) {
+      fprintf(arq,"{%d,%s,%s,", percorre->proximo->cadastro.codigo, percorre->proximo->cadastro.nome, percorre->proximo->cadastro.sexo);
+      fprintf(arq,"%d,%.2f,%.2f,%s}\n", percorre->proximo->cadastro.idade, percorre->proximo->cadastro.peso, percorre->proximo->cadastro.altura, percorre->proximo->cadastro.telefone);
+    }else{
+      fprintf(arq,"Elemento nao encontrado\n");
+      }
+  }
+>>>>>>> 703d87a92783e80c264182ae6ce47eb9be2cfaab
 
 
 
@@ -258,9 +274,13 @@ int main(int argc, char const *argv[]) {
      exit(1);
      break;
  }
+<<<<<<< HEAD
  //destroi a lista e libera a memoria
  destroiLista(&l, cadastro);
  fclose(arq1);
  fclose(arq2);
+=======
+
+>>>>>>> 703d87a92783e80c264182ae6ce47eb9be2cfaab
  return 0;
 }
