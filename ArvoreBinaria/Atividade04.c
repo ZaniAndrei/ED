@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-
+#include <ctype.h>
 
 typedef struct NoFila* PtrNoFila;
 typedef struct NoArvore* PtrNoArvore;
@@ -63,34 +63,51 @@ bool insereArvoreBinaria(PtrNoArvore *no, char *chaves){
   }
 }
 
-void inserirFila(Fila *fila, int pagina){
-  PtrNoFila novo = malloc(sizeof(NoFila));
-  novo->pagina = pagina;
-  novo->proximo = NULL;
-  if (estaVaziaFila(fila)) {
-    fila->inicio = novo;
+bool percorreFila(Fila *fila, int busca){
+  PtrNoFila percorre;
+  for (percorre = fila->inicio; percorre != NULL; percorre = percorre->proximo) {
+    if (percorre->pagina == busca) {
+      return true;
+    }
   }
-  else{
-    fila->fim->proximo = novo;
-  }
-  fila->fim = novo;
-  fila->qtde++;
+  return false;
 }
 
-void imprimeFila(Fila *fila){
+
+void inserirFila(Fila *fila, int pagina){
+  if (!percorreFila(fila, pagina)) {
+    PtrNoFila novo = malloc(sizeof(NoFila));
+    novo->pagina = pagina;
+    novo->proximo = NULL;
+    if (estaVaziaFila(fila)) {
+      fila->inicio = novo;
+    }
+    else{
+      fila->fim->proximo = novo;
+    }
+    fila->fim = novo;
+    fila->qtde++;
+  }
+}
+void tamanhoFila(Fila *fila){
+
+}
+
+
+void imprimeFila(Fila *fila, FILE* arq){
   PtrNoFila aux;
   for (aux = fila->inicio; aux != NULL; aux = aux->proximo) {
-    printf(",%d", aux->pagina);
+    fprintf(arq, ",%d", aux->pagina);
   }
-  printf("\n");
 }
 
-void emOrdemArvoreBinaria(PtrNoArvore *no){
+void emOrdemArvoreBinaria(PtrNoArvore *no, FILE* arq){
   if ((*no) == NULL) return;
-  emOrdemArvoreBinaria(&(*no)->esquerda);
-  printf("%s",(*no)->chaves);
-  imprimeFila(&(*no)->fila);
-  emOrdemArvoreBinaria(&(*no)->direita);
+  emOrdemArvoreBinaria(&(*no)->esquerda, arq);
+  fprintf(arq,"%s",(*no)->chaves);
+  imprimeFila(&(*no)->fila, arq);
+  fprintf(arq, "\n");
+  emOrdemArvoreBinaria(&(*no)->direita, arq);
 }
 
 
@@ -100,8 +117,6 @@ bool procuraArvoreBinaria(PtrNoArvore *no, char *palavrasTexto, int pagina){
      inserirFila(&(*no)->fila, pagina);
      return true;
    }
-   //recursao
-   //valor > no.x -> subarvore direita
    if (strcmp((*no)->chaves, palavrasTexto) < 0) {
     return(procuraArvoreBinaria(&(*no)->direita, palavrasTexto, pagina));
   }else{
@@ -109,21 +124,43 @@ bool procuraArvoreBinaria(PtrNoArvore *no, char *palavrasTexto, int pagina){
   }
 }
 
+void converteMaiusculo(char* palavra){
+  int tamanho = strlen(palavra);
+  for (int i = 0; i < tamanho; i++) {
+  palavra[i] = tolower(palavra[i]);
+  }
+  palavra[tamanho] = '\0';
+}
+
+void destroiArvore(PtrNoArvore *no){
+  if((*no) != NULL) {
+    destroiArvore(&(*no)->esquerda);
+    destroiArvore(&(*no)->direita);
+    free(*no);
+    *no = NULL;
+  }
+}
+
 
 int main(int argc, char const *argv[]) {
   PtrNoArvore a;
   Fila f;
-  char palavra[100];
+  char palavra[700];
   bool termosFile = true;
   int pagina;
   char* token;
 
-  FILE* arq1 = fopen("entrada1.txt", "r");
+  if (argc != 3) {
+    printf("Utilize 3 argumentos somente\n");
+    return 1;
+  }
+  
+  FILE* arq1 = fopen(argv[1], "r");
   if (arq1 == NULL) {
     printf("Erro no arquivo de entrada\n");
     return 1;
   }
-  FILE* arq2 = fopen("saida.txt", "w");
+  FILE* arq2 = fopen(argv[2], "w");
   if (arq2 == NULL) {
     printf("Erro no arquivo de saida\n");
     return 1;
@@ -133,12 +170,16 @@ int main(int argc, char const *argv[]) {
   while (!feof(arq1)) {
     //se for a primeira linha ele ira pegar os termos a serem inseridos na arvore
     if (termosFile) {
-      fgets(palavra, 100, arq1);
+      //700 pra pegar a linha inteira dos arquivos(algumas deram 600 e pouco)
+      fgets(palavra, 700, arq1);
       //separa os termos em tokens
       token = strtok(palavra, "<:,>\n");
       //ao colocar essa funçao uma vez aqui evitamos que "termos" seja inserido
       token = strtok(NULL, "<:,>\n");
       while (token != NULL) {
+        /*converte para minusculo para achar corretamente as palavras no texto
+        (será feito com as palavras mais adiante também)*/
+        converteMaiusculo(token);
         //printf("Termos: %s\n", token);
         insereArvoreBinaria(&a, token);
         token = strtok(NULL, "<:,>\n");
@@ -146,7 +187,7 @@ int main(int argc, char const *argv[]) {
       //nao permite a entrada novamente
       termosFile = false;
     }
-    fgets(palavra, 100, arq1);
+    fgets(palavra, 700, arq1);
     if (palavra[0] == '<') {
       //separa a pagina em um token
       token = strtok(palavra, ":>\n");
@@ -159,18 +200,20 @@ int main(int argc, char const *argv[]) {
       }
     }
     //separa as palavras em tokens
-    token = strtok(palavra, " ,.\n");
+    token = strtok(palavra, " ,.\n();{}[]");
+
     while (token != NULL) {
+      converteMaiusculo(token);
+      //printf("Texto: %s\n",token);
       if (procuraArvoreBinaria(&a, token, pagina)) {
 
       }
-      token = strtok(NULL, " ,.\n");
+      token = strtok(NULL, " ,.\n();{}[]");
     }
   }
+  emOrdemArvoreBinaria(&a, arq2);
 
-  //insereArvoreBinaria(&a, "Amanda");
-  emOrdemArvoreBinaria(&a);
-
+  destroiArvore(&a);
   fclose(arq1);
   fclose(arq2);
   return 0;
